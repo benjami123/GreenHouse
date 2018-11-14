@@ -1,0 +1,48 @@
+div{
+    padding-top: 10px;
+}
+
+body{
+    background-color: #3e3f44;
+    font-family: "Arial", Gadget, sans-serif;
+    color: white;
+    padding-bottom: 50px;
+}
+
+.text-align-center{
+    text-align: center;
+}
+
+.no-paddign-sides{
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.padding-top-20{
+    padding-top: 20px;
+}
+
+.bolden{
+    font-weight: bold;
+}
+.padding-top-5{
+    padding-top: 5px;
+}
+
+#title{
+    color: white;
+    font-family: "Arial Black", Gadget, sans-serif;
+    font-size: 30pt;
+}
+
+#temperature{
+    font-size: 3em;
+    font-family: "Arial Black", Gadget, sans-serif;
+}
+#ex1Slider .slider-selection {
+	background: #BABABA;
+}
+
+.slider.slider-horizontal{
+  width:200px !important;
+}
