@@ -8,7 +8,6 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-    <link rel="stylesheet" type="text/css" media="screen" href="css/style.css" />
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js" integrity="sha384-pjaaA8dDz/5BgdFUPX6M/9SUZv4d12SUPF0axWc+VRZkx5xU3daN+lYb49+Ax+Tl" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="main.css">
@@ -28,16 +27,58 @@
         socket.on('sensorData', function(data) {
             var myData = JSON.parse(data);
             document.getElementById("temperature").innerHTML =
-                "Temperature: " + parseFloat(myData.temperature).toFixed(2) + "°C";
-
+                parseFloat(myData.temperature).toFixed(2) + "°C";
+            if(document.getElementById('autoTemp').checked){
+                if(parseFloat(myData.temperature).toFixed(2) < 23){
+                    socket.emit("Heater","1");
+                    document.getElementById('heatTag').innerHTML = '[ ON  ]';                
+                }else{
+                    socket.emit("Heater","0");
+                    document.getElementById('heatTag').innerHTML = '[ OFF ]';
+                }
+            }
             document.getElementById("Humidity").innerHTML =
-                "Humidity: " + parseFloat(myData.humidity).toFixed(2) + "%";
-            //document.getElementById("meterTemp").value = myData.temperature;
-            //document.getElementById("meterHumi").value = myData.humidity;
+                 parseFloat(myData.humidity).toFixed(2) + "%";
         });
-		socket.on("LightSensor",function(data){
-			document.getElementById("lightSensor").innerHTML = data;
+		socket.on("LightSensor", function(data){
+            document.getElementById("lightSensor").innerHTML = data + "%";
+            if(document.getElementById('autoLight').checked){
+                if(data < 10){
+                    socket.emit("Light", 100);
+                    slider.setValue(100);
+                }else if(data < 20){                    
+                    socket.emit("Light", 80);
+                    slider.setValue(80);
+                }else if(data < 30){
+                    socket.emit("Light", 70);
+                    slider.setValue(50);             
+                }else if(data < 40){
+                    socket.emit("Light", 60);
+                    slider.setValue(50);             
+                }else if(data < 50){
+                    socket.emit("Light", 50);
+                    slider.setValue(50);             
+                }else if(data < 60){
+                    socket.emit("Light", 40);
+                    slider.setValue(30);            
+                }else if(data < 80){
+                    socket.emit("Light", 20);
+                    slider.setValue(20);              
+                }else{
+                    socket.emit("Light", 50);
+                    slider.setValue(50);               
+                }
+            }
 		});
+        function autoTemp(){
+            if(document.getElementById('autoTemp').checked){
+                document.getElementById('heaterCheck').disabled = true;
+                heater();
+            }else{
+                document.getElementById('heaterCheck').disabled = false;
+                heater();
+            }
+        }
 
         // Set update interval
         function update() {
@@ -45,38 +86,53 @@
         }
 
         // Request sensor data
-        function getValues() {
+        function getValues(){
             // Emit message to get data
             socket.emit('readSensor');
         }
-		var heat = 0;
-		function heater()
-		{
-			if(heat == 0)
-			{
-				socket.emit("Heater","on");
-				heat = 1;
-			}
-			else
-			{
-				socket.emit("Heater","off");
-				heat = 0;
+		
+		function heater(){		
+			if(document.getElementById('heaterCheck').checked){
+                socket.emit("Heater","1");
+                document.getElementById('heatTag').innerHTML = '[ ON  ]';
+			}else{
+                socket.emit("Heater","0");
+                document.getElementById('heatTag').innerHTML = '[ OFF ]';
 			}
 		}
-		var servoMotor = 0;
-		function servo()
-		{
-			if(servoMotor == 0)
-			{
-				socket.emit("Servo","on");
-				servoMotor = 1;
+		function servo(){
+			if(document.getElementById('servoCheck').checked){
+				socket.emit("Servo", "0");
 			}
-			else
-			{
-				socket.emit("Servo","off");
-				servoMotor = 0;
+			else{
+				socket.emit("Servo", "1");
 			}
-		}
+        }
+        function startLog(){
+            var file = document.getElementById('fileName').value;
+            console.log(file)
+            socket.emit("startLog", file);
+        }
+        
+        function stopLog(){
+            socket.emit("stopLog", '');
+        }
+        
+        socket.on('startLogRes', function(data) {
+            document.getElementById('message').innerHTML = data;
+        });
+
+        socket.on('stopLogRes', function(data) {
+            document.getElementById('message').innerHTML = data;
+        });
+
+
+        //When pages load:
+        socket.emit("Light", 50);        
+        socket.emit("Heater", "0");
+        socket.emit("Servo", "0");
+
+        
     </script>
 
 </head>
@@ -93,7 +149,7 @@
                 <!--  <div class="container"> -->
                 <div class="row">
                     <div class="col-12 text-align-center">
-                        <span id="temperature">20 °C</span>
+                        <span id="temperature">--.-- °C</span>
 
                     </div>
                 </div>
@@ -102,7 +158,7 @@
                         Himidity:
                     </div>
                     <div class="col-3 " id="Humidity">
-                        50 RH
+                        --.--%
                     </div>
                     <div class="col-3 ">
                         Light:
@@ -117,11 +173,11 @@
             <div class="offset-md-2 col-md-5">
                 <div class="row">
                     <div class="col-4 bolden">Windows</div>
-                    <div class="col-8"><input type="checkbox" checked data-toggle="toggle" data-on="Open" data-off="Close" data-width="200" onchange="servo()"></div>
+                    <div class="col-8"><input type="checkbox" checked data-toggle="toggle" data-on="Close" data-off="Open" data-width="200" onchange="servo()" id="servoCheck"></div>
                 </div>
                 <div class="row">
-                    <div class="col-4 bolden">Heat</div>
-                    <div class="col-8"><input type="checkbox" checked data-toggle="toggle" data-width="200" onchange="heater()"></div>
+                    <div class="col-4 bolden" >Heat <span id="heatTag">[ OFF ]</span></div>
+                    <div class="col-8"><input type="checkbox" data-toggle="toggle" data-width="200" onchange="heater()" id="heaterCheck"></div>
                 </div>
                 <div class="row">
                     <div class="col-4 bolden">Light <span id="lightint" > [ 50% ]</span></div>
@@ -130,6 +186,38 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="row">
+            <div class="col-12 text-align-center">
+                <span class=" subTitle">Settings</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-4 col-md-2 offset-md-2 padding-top-17"><span class="">Auto temp</span></div>
+            <div class="col-2">
+                <input type="checkbox" data-toggle="toggle" data-on="ON" data-off="OFF" data-width="50" onchange="autoTemp()" id="autoTemp">
+            </div>
+            <div class="col-4 col-md-2 padding-top-17"><span class="">Auto Light</span></div>
+            <div class="col-2">
+                <input type="checkbox" data-toggle="toggle" data-on="ON" data-off="OFF" data-width="50" onchange="autoLight()" id="autoLight">
+            </div>
+        </div>
+        <div class="row">
+            <div class="offset-1 col-2 col-md-2 offset-md-2 subTitle">Log</div>
+            <div class=" col-4 col-md-4 padding-top-20">
+                    <input type="text" name="fileName" value="Log_01.txt" id="fileName">
+            </div>
+            <div class="col-2 col-md-1 padding-top-20">
+                <button type="button" class="btn btn-primary" onclick="startLog()">Start</button> 
+            </div>
+            <div class="col-2 col-md-1 padding-top-20">
+                <button type="button" class="btn btn-primary" onclick="stopLog()">Stop</button> 
+            </div>
+        </div>
+        <div class="row">
+                <div class="col-md-8 offset-md-2 text-align-center subTitle">
+                    <span id="message">Message</span>
+                </div>
         </div>
     </div>
     <!-- SLider code -->
@@ -140,11 +228,21 @@
             }
         });
         slider.on('slideStop', function(value) {
-			socket.emit("Light",value);
-            document.getElementById("lightint").innerHTML ="[ " + value + "% ]";
-            //-------Get the value of the slider here ---//
-			
-        });
+			    socket.emit("Light", value);
+                document.getElementById("lightint").innerHTML ="[ " + value + "% ]";
+                //-------Get the value of the slider here ---//			
+            });
+        if(document.getElementById('autoLight').checked){
+            slider.disable();
+        }
+        function autoLight(){
+            if(document.getElementById('autoLight').checked){
+                slider.disable();
+            }else{
+                slider.enable();
+                socket.emit("Light", slider.getValue());
+            }
+        }
     </script>
 </body>
 </html>
